@@ -1,5 +1,7 @@
 # Solar Report
 
+[![CI](https://github.com/BrandonJamesEndrizzi/solar_app/actions/workflows/ci.yml/badge.svg)](https://github.com/BrandonJamesEndrizzi/solar_app/actions/workflows/ci.yml)
+
 A daily space weather digest, delivered by email.
 
 Every morning it pulls solar event and alert data from NOAA's Space Weather
@@ -109,7 +111,19 @@ python weather.py        # fetch the NCEI station list
 | `email_sending.py` | SMTP delivery |
 | `generate_response.py` | GPT-4 summarization |
 | `events.py` | Helpers for dumping the raw feeds |
+| `tests/` | Pytest suite for the scheduling, filtering, formatting, and image logic |
 | `tokenizer/` | Experiments with a locally fine-tuned T5 model — see its README |
+
+## Development
+
+```bash
+pip install pytest
+pytest
+```
+
+The suite covers the pure logic — scheduling, date filtering, formatting, the
+email body, and the sunspot detector (run against synthetic disc images) — and
+needs no API keys or network access. CI runs it on every push.
 
 ## Data sources
 
