@@ -31,11 +31,12 @@ def get_news(begin_date_formatted, end_date_formatted):
     try:
         response = requests.get(SEARCH_URL, params=params, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
-    except requests.RequestException as err:
+        data = response.json()
+    except (requests.RequestException, ValueError) as err:
         print(f"Failed to fetch news: {err}")
         return []
 
-    return response.json()["response"]["docs"]
+    return data.get("response", {}).get("docs", [])
 
 
 def main(begin_date, end_date):

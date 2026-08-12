@@ -6,16 +6,31 @@ from datetime import datetime, timedelta
 MAX_LOOKBACK_DAYS = 10
 
 
+def _parse_datetime(value):
+    """Return a datetime for an ISO string, or None if it is missing or malformed.
+
+    The NOAA feeds occasionally contain records with null or absent timestamps;
+    those records are skipped rather than crashing the run.
+    """
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
 def filter_events_by_date(events, start_date, end_date):
     """Return events whose begin_datetime falls within the range."""
     start = datetime.fromisoformat(start_date)
     end = datetime.fromisoformat(end_date)
 
-    return [
-        event
-        for event in events
-        if start <= datetime.fromisoformat(event["begin_datetime"]) <= end
-    ]
+    matches = []
+    for event in events:
+        begin = _parse_datetime(event.get("begin_datetime"))
+        if begin is not None and start <= begin <= end:
+            matches.append(event)
+    return matches
 
 
 def filter_alerts_by_date(alerts, start_date, end_date):
@@ -31,11 +46,11 @@ def filter_alerts_by_date(alerts, start_date, end_date):
     end = datetime.fromisoformat(end_date)
 
     for _ in range(MAX_LOOKBACK_DAYS):
-        matches = [
-            alert
-            for alert in alerts
-            if start <= datetime.fromisoformat(alert["issue_datetime"]) <= end
-        ]
+        matches = []
+        for alert in alerts:
+            issued = _parse_datetime(alert.get("issue_datetime"))
+            if issued is not None and start <= issued <= end:
+                matches.append(alert)
         if matches:
             return matches
 
