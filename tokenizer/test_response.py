@@ -6,7 +6,6 @@ import generate_response
 
 TOKENIZER_DIR = Path(__file__).resolve().parent
 MODEL_PATH = TOKENIZER_DIR.parent / "model"
-TOKENIZER_PATH = TOKENIZER_DIR / "custom_tokenizer.json"
 
 SAMPLE_EVENT = {
     "prompt": "Write a concise description of the event.",
@@ -29,7 +28,7 @@ def main():
         )
 
     model = generate_response.load_model(MODEL_PATH)
-    tokenizer = generate_response.load_tokenizer(TOKENIZER_PATH)
+    tokenizer = generate_response.load_tokenizer(MODEL_PATH)
 
     output_text = generate_response.generate_text(str(SAMPLE_EVENT), model, tokenizer)
     print(f"Input: {SAMPLE_EVENT}")
