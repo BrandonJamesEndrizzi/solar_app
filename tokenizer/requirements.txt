@@ -1,0 +1,4 @@
+# Only needed for the experiments in tokenizer/, not for the report app itself.
+torch>=2.2
+transformers>=4.38
+sentencepiece>=0.2

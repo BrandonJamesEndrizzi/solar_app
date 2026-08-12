@@ -1,0 +1,31 @@
+# Secrets and local configuration
+.env
+config.ini
+
+# Downloaded data and generated reports
+data_dump/
+model/
+*.jpg
+*.jpeg
+*.png
+solar_events_data.txt
+solar_alerts_data.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# macOS
+.DS_Store
+Icon?
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
+*.log
