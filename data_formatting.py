@@ -7,10 +7,11 @@ def format_alerts_data(alerts):
     """Format space weather alerts as indented, readable blocks."""
     lines = []
     for alert in alerts:
-        lines.append(f"Product ID: {alert['product_id']}")
-        lines.append(f"Issue DateTime: {alert['issue_datetime']}")
+        lines.append(f"Product ID: {alert.get('product_id', 'N/A')}")
+        lines.append(f"Issue DateTime: {alert.get('issue_datetime', 'N/A')}")
         lines.append("Message:")
-        lines.extend(f"    {line}" for line in alert["message"].split("\r\n"))
+        message = alert.get("message") or ""
+        lines.extend(f"    {line}" for line in message.split("\r\n"))
         lines.append("")
 
     return "\n".join(lines)

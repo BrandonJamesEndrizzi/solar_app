@@ -47,22 +47,33 @@ def main():
     input_ids = pad(input_ids, tokenizer.pad_token_id, max_length)
     output_ids = pad(output_ids, tokenizer.pad_token_id, max_length)
 
-    dataset = TensorDataset(torch.tensor(input_ids), torch.tensor(output_ids))
+    inputs = torch.tensor(input_ids)
+    labels = torch.tensor(output_ids)
+    # -100 marks padding positions so they are excluded from the loss.
+    labels[labels == tokenizer.pad_token_id] = -100
+
+    dataset = TensorDataset(inputs, labels)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE)
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
 
     model.train()
     for epoch in range(NUM_EPOCHS):
-        for input_batch, output_batch in loader:
+        for input_batch, label_batch in loader:
             optimizer.zero_grad()
-            outputs = model(input_ids=input_batch, labels=output_batch)
+            attention_mask = (input_batch != tokenizer.pad_token_id).long()
+            outputs = model(
+                input_ids=input_batch,
+                attention_mask=attention_mask,
+                labels=label_batch,
+            )
             outputs.loss.backward()
             optimizer.step()
             print(f"Epoch: {epoch}, Loss: {outputs.loss.item()}")
 
     MODEL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(MODEL_OUTPUT_DIR)
-    print(f"Model saved to {MODEL_OUTPUT_DIR}")
+    tokenizer.save_pretrained(MODEL_OUTPUT_DIR)
+    print(f"Model and tokenizer saved to {MODEL_OUTPUT_DIR}")
 
 
 if __name__ == "__main__":

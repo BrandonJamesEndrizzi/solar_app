@@ -1,21 +1,18 @@
-from transformers import T5ForConditionalGeneration
-from transformers import PreTrainedTokenizerFast
+"""Load a fine-tuned T5 model and generate text from it."""
+
+from transformers import T5ForConditionalGeneration, T5Tokenizer
+
 
 def load_model(model_path):
-    model = T5ForConditionalGeneration.from_pretrained(model_path)
-    return model
+    return T5ForConditionalGeneration.from_pretrained(model_path)
+
 
 def load_tokenizer(tokenizer_path):
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
-    return tokenizer
+    """Load the tokenizer saved next to the model by custom_training.py."""
+    return T5Tokenizer.from_pretrained(tokenizer_path)
+
 
 def generate_text(input_text, model, tokenizer):
-    # Tokenize the input text
     input_ids = tokenizer.encode(input_text, return_tensors="pt")
-
-    # Generate output
     output = model.generate(input_ids)
-
-    # Decode and return the output text
-    decoded_output = tokenizer.decode(output[0], skip_special_tokens=True)
-    return decoded_output
+    return tokenizer.decode(output[0], skip_special_tokens=True)

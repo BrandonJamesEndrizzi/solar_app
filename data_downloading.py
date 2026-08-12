@@ -29,7 +29,13 @@ def download_json(question):
         print(f"Failed to download {question} from {url}: {err}")
         return None
 
-    data = response.json()
+    try:
+        data = response.json()
+    except ValueError as err:
+        # Outages sometimes serve an HTML error page with a 200 status.
+        print(f"Invalid JSON for {question} from {url}: {err}")
+        return None
+
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file)
     return data
@@ -69,15 +75,24 @@ def download_json_weather(base_url, headers, limit=25, pause=0.25):
                 paginated_url, headers=headers, timeout=REQUEST_TIMEOUT
             )
             response.raise_for_status()
-        except requests.RequestException as err:
+            data = response.json()
+        except (requests.RequestException, ValueError) as err:
             print(f"Failed to fetch stations at offset {offset}: {err}")
             break
 
-        data = response.json()
-        all_stations.extend(data["results"])
+        # The API returns an empty object (no "results" key) past the end.
+        results = data.get("results")
+        if not results:
+            break
+        all_stations.extend(results)
 
         if total_stations is None:
-            total_stations = data["metadata"]["resultset"]["count"]
+            total_stations = (
+                data.get("metadata", {}).get("resultset", {}).get("count")
+            )
+            if total_stations is None:
+                print("No result count in the response; stopping after one page.")
+                break
 
         offset += limit
         time.sleep(pause)

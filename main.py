@@ -6,6 +6,7 @@ config.ini. Run this on a schedule (cron, launchd, Task Scheduler) once a day.
 
 import configparser
 import datetime
+import functools
 import sys
 
 import email_formatting
@@ -51,8 +52,8 @@ def read_recipient(config, recipient):
     try:
         frequency = config.getint(recipient, "frequency")
         themes = config.get(recipient, "themes")
-    except configparser.NoSectionError:
-        print(f"No configuration section found for {recipient}. Skipping.")
+    except (configparser.NoSectionError, configparser.NoOptionError) as err:
+        print(f"Incomplete configuration for {recipient} ({err}). Skipping.")
         return None
     except ValueError:
         print(f"Frequency for {recipient} is not a number. Skipping.")
@@ -66,8 +67,29 @@ def read_recipient(config, recipient):
     return frequency, theme_list
 
 
+# Several recipients are often due on the same day. Caching lets them share one
+# set of downloads and one GPT-4 call per date range instead of paying per head.
+@functools.lru_cache(maxsize=None)
+def _solar_section(start_date, end_date):
+    """Return (summary, attachments, inline_image_path) for a date range."""
+    report = solar.build_report(start_date, end_date)
+    summary = generate_response_solar(report.prompt)
+    return summary, report.attachments, report.inline_image_path
+
+
+@functools.lru_cache(maxsize=None)
+def _news_summary():
+    """Return the news summary, or '' if no articles were found."""
+    prompt = news.build_prompt()
+    return generate_response_news(prompt) if prompt else ""
+
+
 def build_and_send(recipient, frequency, themes):
-    """Build this recipient's report and send it. Returns True if sent."""
+    """Build this recipient's report and send it.
+
+    Returns True if sent, False if sending failed, and None if there was
+    nothing to report.
+    """
     start_date, end_date = get_date_range(frequency)
 
     solar_summary = ""
@@ -77,20 +99,17 @@ def build_and_send(recipient, frequency, themes):
 
     if "solar" in themes:
         print(f"Building solar report for {recipient}")
-        report = solar.build_report(start_date, end_date)
-        solar_summary = generate_response_solar(report.prompt)
-        attachments = report.attachments
-        inline_image = report.inline_image_path
+        solar_summary, attachments, inline_image = _solar_section(
+            start_date, end_date
+        )
 
     if "news" in themes:
         print(f"Building news report for {recipient}")
-        prompt = news.build_prompt()
-        if prompt:
-            news_summary = generate_response_news(prompt)
+        news_summary = _news_summary()
 
     if not solar_summary and not news_summary:
         print(f"Nothing to report for {recipient}. Skipping.")
-        return False
+        return None
 
     html_body = email_formatting.get_html_email_body(
         DISCLAIMER,
@@ -100,8 +119,9 @@ def build_and_send(recipient, frequency, themes):
         news_summary,
     )
 
+    cadence = "Daily" if frequency == DAILY else "Weekly"
     return email_sending.send_email(
-        f"Daily Report for {end_date}",
+        f"{cadence} Report for {end_date}",
         html_body,
         recipient,
         attachments,
@@ -114,16 +134,21 @@ def main():
     day_of_week = datetime.date.today().weekday()
     config = load_config()
 
+    try:
+        configured = config.get("Email", "recipients")
+    except (configparser.NoSectionError, configparser.NoOptionError):
+        print("config.ini has no [Email] section with a recipients option.")
+        return 1
+
     recipients = [
-        address.strip()
-        for address in config.get("Email", "recipients").split(",")
-        if address.strip()
+        address.strip() for address in configured.split(",") if address.strip()
     ]
 
     if not recipients:
         print("No recipients configured in config.ini.")
         return 1
 
+    failures = 0
     for recipient in dict.fromkeys(recipients):
         print(f"\nLooking up configuration for {recipient}")
 
@@ -137,12 +162,17 @@ def main():
             continue
 
         try:
-            build_and_send(recipient, frequency, themes)
+            sent = build_and_send(recipient, frequency, themes)
         except Exception as err:
             # One recipient failing should not stop the rest of the run.
             print(f"Failed to build the report for {recipient}: {err}")
+            failures += 1
+        else:
+            if sent is False:
+                failures += 1
 
-    return 0
+    # A non-zero exit code lets cron/systemd surface delivery problems.
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":
