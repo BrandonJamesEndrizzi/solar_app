@@ -1,0 +1,43 @@
+; Copy this file to config.ini and edit it. config.ini is gitignored because it
+; contains real recipient addresses. Credentials do NOT go here; they go in .env.
+
+[URLs]
+solar_events_url = https://services.swpc.noaa.gov/json/edited_events.json
+solar_alerts_url = https://services.swpc.noaa.gov/products/alerts.json
+solar_image_url = https://sdo.gsfc.nasa.gov/assets/img/latest/latest_4096_0193.jpg
+solar_image_red_url = https://sdo.gsfc.nasa.gov/assets/img/latest/latest_4096_0304.jpg
+solar_image_yellow_url = https://sdo.gsfc.nasa.gov/assets/img/latest/latest_4096_0171.jpg
+weather_station_list_url = https://www.ncei.noaa.gov/cdo-web/api/v2/stations
+
+; Other SDO channels available at https://sdo.gsfc.nasa.gov/assets/img/latest/
+; latest_4096_0131.jpg  latest_4096_0171.jpg  latest_4096_0193.jpg
+; latest_4096_0211.jpg  latest_4096_0304.jpg  latest_4096_0335.jpg
+; latest_4096_1600.jpg  latest_4096_1700.jpg  latest_4096_HMIB.jpg
+
+; Filenames only. Everything is written to data_dump/ inside the project.
+[Paths]
+solar_events_file = edited_events.json
+solar_alerts_file = alerts.json
+solar_image_file = latest_4096_0193.jpg
+solar_image_red_file = latest_4096_0304.jpg
+solar_image_yellow_file = latest_4096_0171.jpg
+
+[SMTP]
+host = smtp.gmail.com
+port = 465
+use_ssl = true
+
+[Email]
+recipients = you@example.com, someone.else@example.com
+
+; One section per recipient, named by their email address.
+;   frequency: 1 = daily. 0 and 2-6 = weekly on that weekday
+;              (0 = Monday, 2 = Wednesday, ... 6 = Sunday).
+;   themes:    any combination of "solar" and "news".
+[you@example.com]
+frequency = 1
+themes = solar, news
+
+[someone.else@example.com]
+frequency = 2
+themes = solar
