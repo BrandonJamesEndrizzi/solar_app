@@ -29,8 +29,8 @@ produces false positives.
 Requires Python 3.10+.
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/solar-report.git
-cd solar-report
+git clone https://github.com/BrandonJamesEndrizzi/solar_app.git
+cd solar_app
 
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
